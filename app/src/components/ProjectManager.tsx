@@ -102,7 +102,7 @@ const ProjectManager: React.FC = () => {
   };
 
   // ... (addCreditRow, removeCreditRow, updateCredit se mantienen igual) ...
-  const addCreditRow = () => setFormData(prev => ({ ...prev, creditos: [...prev.creditos, { id: `temp_${Date.now()}`, rol_id: '', persona_id: '' }] }));
+  const addCreditRow = () => setFormData(prev => ({ ...prev, creditos: [...prev.creditos, { id: `temp_${crypto.randomUUID()}`, rol_id: '', persona_id: '' }] }));
   const removeCreditRow = (id: string) => setFormData(prev => ({ ...prev, creditos: prev.creditos.filter(c => c.id !== id) }));
   const updateCredit = (id: string, field: string, value: string) => setFormData(prev => ({ ...prev, creditos: prev.creditos.map(c => c.id === id ? { ...c, [field]: value } : c) }));
 

@@ -4,6 +4,7 @@ import type { Artist } from "@/lib/types";
 import Header from "@/components/Header";
 import ProjectCard from "@/components/ProjectCard";
 import Footer from "@/components/Footer";
+import { apiUrl } from "@/lib/apiClient";
 
 interface ArtistaProPageType {
   id: string;
@@ -26,7 +27,7 @@ export function ArtistaProPage() {
     useEffect(() => {
         const fetchArtist = async () => {
             const id = window.location.pathname.split("/").pop();
-            const response = await fetch(`/api/artists/${id}`);
+            const response = await fetch(apiUrl(`/api/artists/${id}`));
             const data = await response.json();
             console.log("Fetched artist:", data);
             setArtist(data);

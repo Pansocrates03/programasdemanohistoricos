@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Edit2, Save, X, Users, Upload, Image as ImageIcon, FileText, Loader2 } from 'lucide-react';
 import { compressImage } from '@/lib/utils';
+import { apiUrl } from '@/lib/apiClient';
 
 interface Rol { id: string; nombre: string; categoria: string; requerido: boolean; }
 interface Compania { id: string; tag: string; nombre: string; sede: string | null; }
@@ -31,9 +32,9 @@ const ProjectForm: React.FC = () => {
     useEffect(() => {
         // Cargamos catálogos siempre
         Promise.all([
-            fetch('/api/roles').then(res => res.json()),
-            fetch('/api/companies').then(res => res.json()),
-            fetch('/api/artists?nolimits=true').then(res => res.json())
+            fetch(apiUrl('/api/roles')).then(res => res.json()),
+            fetch(apiUrl('/api/companies')).then(res => res.json()),
+            fetch(apiUrl('/api/artists?nolimits=true')).then(res => res.json())
         ]).then(([rolesData, companiasData, artistasData]) => {
             setRoles(rolesData);
             setCompanias(companiasData);
@@ -42,7 +43,7 @@ const ProjectForm: React.FC = () => {
 
         // Si estamos en edición, traemos los datos del proyecto
         if (isEditMode && id) {
-            fetch(`/api/proyectos/${id}`)
+            fetch(apiUrl(`/api/proyectos/${id}`))
                 .then(res => {
                     if (!res.ok) throw new Error("Proyecto no encontrado");
                     return res.json();
@@ -97,7 +98,7 @@ const ProjectForm: React.FC = () => {
           const url = isEditMode ? `/api/proyectos/${id}` : `/api/proyectos`;
           const method = isEditMode ? 'PUT' : 'POST';
     
-          const res = await fetch(url, { method, body: formDataToSend });
+          const res = await fetch(apiUrl(url), { method, body: formDataToSend });
           if (!res.ok) throw new Error("Error al guardar el proyecto");
           
           alert(`Proyecto ${isEditMode ? 'actualizado' : 'creado'} con éxito.`);

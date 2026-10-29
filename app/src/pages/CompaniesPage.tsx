@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import PageTitle from '@/components/PageTitle';
 import type { Company } from '@/lib/types';
 import Footer from '../components/Footer';
+import { apiUrl } from '@/lib/apiClient';
 
 // DATOS DE PRUEBA (Mock Data) para visualizar el ejemplo nacional
 
@@ -12,7 +13,7 @@ const CompaniesPage = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
 
   async function getCompanies(search = "") {
-    const response = await fetch(`/api/companies?search=${search}`);
+    const response = await fetch(apiUrl(`/api/companies?search=${search}`));
     if(response.status !== 200) {
       console.error("Error fetching companies:", response.statusText);
       return;

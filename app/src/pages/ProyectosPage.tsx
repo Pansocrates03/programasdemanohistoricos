@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import type { ProjectWithCompany } from '@/lib/types';
 import PageTitle from '@/components/PageTitle';
 import Footer from '@/components/Footer';
+import { apiUrl } from '@/lib/apiClient';
 
 const PAGE_SIZE = 20; // debe coincidir con el limit del backend
 
@@ -28,7 +29,7 @@ const ProyectosPage = () => {
     isLoadingRef.current = true;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/proyectos?search=${encodeURIComponent(search)}&page=${page}`);
+      const response = await fetch(apiUrl(`/api/proyectos?search=${encodeURIComponent(search)}&page=${page}`));
       const data: ProjectWithCompany[] = await response.json();
 
       setHasMore(data.length === PAGE_SIZE);

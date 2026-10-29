@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from '@/components/Header';
 import { CircleUserRound, Building2, Clapperboard, Save } from "lucide-react";
 import ProjectManager from '../components/ProjectManager';
+import { apiUrl } from '@/lib/apiClient';
 
 type TabType = 'compania' | 'artista' | 'proyecto';
 
@@ -13,7 +14,7 @@ const AdminPage: React.FC = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    fetch('/api/companies', {
+    fetch(apiUrl('/api/companies'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -33,7 +34,7 @@ const AdminPage: React.FC = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    fetch('/api/artists', {
+    fetch(apiUrl('/api/artists'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)

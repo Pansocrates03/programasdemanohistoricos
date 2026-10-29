@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Users, Plus, X, Trash2 } from 'lucide-react';
 import Header from '../Header';
+import { apiUrl } from '@/lib/apiClient';
 
 interface Rol {
     id: string;
@@ -42,8 +43,8 @@ const ArtistaForm: React.FC = () => {
         const loadCatalogs = async () => {
             try {
                 const [rolesRes, proyectosRes] = await Promise.all([
-                    fetch('/api/roles'),
-                    fetch('/api/all-proyectos') // Usamos la nueva ruta para obtener solo id y nombre de proyectos
+                    fetch(apiUrl('/api/roles')),
+                    fetch(apiUrl('/api/all-proyectos')) // Usamos la nueva ruta para obtener solo id y nombre de proyectos
                 ]);
 
                 if (!rolesRes.ok || !proyectosRes.ok) {
@@ -68,7 +69,7 @@ const ArtistaForm: React.FC = () => {
             return;
         }
 
-        fetch(`/api/artists/${id}`)
+        fetch(apiUrl(`/api/artists/${id}`))
             .then((res) => {
                 if (!res.ok) throw new Error('Artista no encontrado');
                 return res.json();
@@ -106,7 +107,7 @@ const ArtistaForm: React.FC = () => {
                 creditos: formData.creditos.map(({ proyecto_id, rol_id }) => ({ proyecto_id, rol_id }))
             };
 
-            const res = await fetch(url, {
+            const res = await fetch(apiUrl(url), {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

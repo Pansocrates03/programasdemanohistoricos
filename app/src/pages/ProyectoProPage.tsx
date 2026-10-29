@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import { useEffect, useState } from "react";
 import { timestampToDate } from "@/lib/utils";
 import { Edit } from "lucide-react";
+import { apiUrl } from "@/lib/apiClient";
 
 interface ProyectoProPageType {
   id: string;
@@ -30,7 +31,7 @@ export function ProyectoProPage() {
     // proyecto &&  proyecto.programa_url && window.open(proyecto?.programa_url)
     const matricula = prompt("Por seguridad solo se mostrará el programa de mano completo a quienes han participado en este proyecto.\n\nIngresa tu matrícula o nómina para continuar:", "A0");
 
-    fetch(`/api/validate-matricula/${matricula}`)
+    fetch(apiUrl(`/api/validate-matricula/${matricula}`))
     .then(res => res.json())
     .then(data => {
       if (data.valid) {
@@ -47,7 +48,7 @@ export function ProyectoProPage() {
   useEffect(() => {
           const fetchProyecto = async () => {
               const id = window.location.pathname.split("/").pop();
-              const response = await fetch(`/api/proyectos/${id}`);
+              const response = await fetch(apiUrl(`/api/proyectos/${id}`));
               const data = await response.json();
               console.log("Proyecto data:", data.creditos);
               setProyecto(data);

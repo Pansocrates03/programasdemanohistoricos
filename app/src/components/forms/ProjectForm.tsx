@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Edit2, Save, X, Users, Upload, Image as ImageIcon, FileText, Loader2 } from 'lucide-react';
 import { compressImage } from '@/lib/utils';
-import { apiUrl } from '@/lib/apiClient';
+import { apiService } from '@/lib/apiService';
 
 interface Rol { id: string; nombre: string; categoria: string; requerido: boolean; }
 interface Compania { id: string; tag: string; nombre: string; sede: string | null; }
@@ -32,22 +32,28 @@ const ProjectForm: React.FC = () => {
     useEffect(() => {
         // Cargamos catálogos siempre
         Promise.all([
-            fetch(apiUrl('/api/roles')).then(res => res.json()),
-            fetch(apiUrl('/api/companies')).then(res => res.json()),
-            fetch(apiUrl('/api/artists?nolimits=true')).then(res => res.json())
+            apiService.get<Rol[]>('/api/roles'),
+            apiService.get<Compania[]>('/api/companies'),
+            apiService.get<Artista[]>('/api/artists?nolimits=true')
         ]).then(([rolesData, companiasData, artistasData]) => {
             setRoles(rolesData);
             setCompanias(companiasData);
             setArtistas(artistasData);
+        }).catch(error => {
+            console.error("Error cargando los catálogos del proyecto:", error);
+            alert("Error cargando la información necesaria para el proyecto.");
         });
 
         // Si estamos en edición, traemos los datos del proyecto
         if (isEditMode && id) {
-            fetch(apiUrl(`/api/proyectos/${id}`))
-                .then(res => {
-                    if (!res.ok) throw new Error("Proyecto no encontrado");
-                    return res.json();
-                })
+            apiService.get<{
+                id: string;
+                proyecto_nombre?: string;
+                nombre?: string;
+                grupo_id?: string;
+                estreno?: string;
+                creditos?: { credito_id?: string; rol_id: string; persona_id: string }[];
+            }>(`/api/proyectos/${id}`)
                 .then(data => {
                     setFormData({
                         id: data.id,
@@ -98,8 +104,11 @@ const ProjectForm: React.FC = () => {
           const url = isEditMode ? `/api/proyectos/${id}` : `/api/proyectos`;
           const method = isEditMode ? 'PUT' : 'POST';
     
-          const res = await fetch(apiUrl(url), { method, body: formDataToSend });
-          if (!res.ok) throw new Error("Error al guardar el proyecto");
+          if (method === 'PUT') {
+            await apiService.putForm(url, formDataToSend);
+          } else {
+            await apiService.postForm(url, formDataToSend);
+          }
           
           alert(`Proyecto ${isEditMode ? 'actualizado' : 'creado'} con éxito.`);
           

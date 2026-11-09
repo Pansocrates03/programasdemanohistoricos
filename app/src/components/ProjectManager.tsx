@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit2, Save, X, Users, Upload, Image as ImageIcon, FileText, Loader2 } from 'lucide-react';
 import { timestampToDate } from '@/lib/utils';
-import { apiUrl } from '@/lib/apiClient';
+import { apiService } from '@/lib/apiService';
 
 interface Rol { id: string; nombre: string; categoria: string; requerido: boolean; created_at: string; updated_at: string; }
 interface Compania { id: string; tag: string; nombre: string; sede: string | null; descripcion: string | null; disciplina: string; banner_url: string; created_at: string; updated_at: string; }
@@ -71,14 +71,19 @@ const ProjectManager: React.FC = () => {
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
 
   // ... (Tus funciones fetchRoles, fetchCompanias, fetchArtistas, fetchProyectos, fetchCreditos se mantienen igual) ...
-  async function fetchRoles() { const res = await fetch(apiUrl('/api/roles')); const data = await res.json(); setRoles(data); }
-  async function fetchCompanias() { const res = await fetch(apiUrl('/api/companies')); const data = await res.json(); setCompanias(data); }
-  async function fetchArtistas() { const res = await fetch(apiUrl('/api/artists?nolimits=true')); const data = await res.json(); setArtistas(data); }
-  async function fetchProyectos() { const res = await fetch(apiUrl('/api/proyectos')); const data = await res.json(); data.map((p: any) => p.creditos = []); setProyectos(data); }
+  async function fetchRoles() { setRoles(await apiService.get<Rol[]>('/api/roles')); }
+  async function fetchCompanias() { setCompanias(await apiService.get<Compania[]>('/api/companies')); }
+  async function fetchArtistas() { setArtistas(await apiService.get<Artista[]>('/api/artists?nolimits=true')); }
+  async function fetchProyectos() {
+    const data = await apiService.get<Proyecto[]>('/api/proyectos');
+    data.forEach(proyecto => { proyecto.creditos = []; });
+    setProyectos(data);
+  }
   async function fetchCreditos(proyectoId: string) { /* ... tu lógica ... */ return []; }
 
   useEffect(() => {
-    fetchRoles(); fetchCompanias(); fetchArtistas(); fetchProyectos();
+    Promise.all([fetchRoles(), fetchCompanias(), fetchArtistas(), fetchProyectos()])
+      .catch(error => console.error("Error cargando los datos del administrador:", error));
   }, []);
 
   const [formData, setFormData] = useState({
@@ -138,12 +143,11 @@ const ProjectManager: React.FC = () => {
       const url = formData.id ? `/api/proyectos/${formData.id}` : `/api/proyectos`;
       const method = formData.id ? 'PUT' : 'POST';
 
-      const res = await fetch(apiUrl(url), {
-        method: method,
-        body: formDataToSend, // ¡Importante! No se usa "Content-Type: application/json" aquí
-      });
-
-      if (!res.ok) throw new Error("Error al guardar el proyecto");
+      if (method === 'PUT') {
+        await apiService.putForm(url, formDataToSend);
+      } else {
+        await apiService.postForm(url, formDataToSend);
+      }
       
       alert("Proyecto y archivos guardados con éxito.");
       fetchProyectos(); // Recargamos la lista

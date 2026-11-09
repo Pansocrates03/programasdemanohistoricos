@@ -1,8 +1,8 @@
 import Header from "@/components/Header";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { timestampToDate } from "@/lib/utils";
-import { Edit } from "lucide-react";
-import { apiUrl } from "@/lib/apiClient";
+import { apiService } from "@/lib/apiService";
+import Modal from "@/components/Modal";
 
 interface ProyectoProPageType {
   id: string;
@@ -26,21 +26,40 @@ interface ProyectoProPageType {
 
 export function ProyectoProPage() {
   const [proyecto, setProyecto] = useState<ProyectoProPageType | null>(null);
+  const [isValidationOpen, setIsValidationOpen] = useState(false);
+  const [matricula, setMatricula] = useState("");
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState("");
+  const [isMatriculaValid, setIsMatriculaValid] = useState(false);
 
-  function proyectoClick() {
-    // proyecto &&  proyecto.programa_url && window.open(proyecto?.programa_url)
-    const matricula = prompt("Por seguridad solo se mostrará el programa de mano completo a quienes han participado en este proyecto.\n\nIngresa tu matrícula o nómina para continuar:", "A0");
+  function openValidation() {
+    setMatricula("");
+    setValidationError("");
+    setIsMatriculaValid(false);
+    setIsValidationOpen(true);
+  }
 
-    fetch(apiUrl(`/api/validate-matricula/${matricula}`))
-    .then(res => res.json())
-    .then(data => {
+  async function validateMatricula(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsValidating(true);
+    setValidationError("");
+    setIsMatriculaValid(false);
+
+    try {
+      const data = await apiService.get<{ valid: boolean }>(
+        `/api/validate-matricula/${encodeURIComponent(matricula.trim())}`
+      );
       if (data.valid) {
-        window.open(proyecto?.programa_url, '_blank');
+        setIsMatriculaValid(true);
       } else {
-        alert(`La matrícula "${matricula}" no se encuentra registrada.\nSi participaste en este proyecto envía un correo a e.s.baccio@gmail.com para registrar tu matrícula.`);
+        setValidationError(`La matrícula "${matricula}" no está registrada. Si participaste en este proyecto, envía un correo a e.s.baccio@gmail.com para registrar tu matrícula.`);
       }
-    })
-    
+    } catch (error) {
+      console.error("Error al validar la matrícula:", error);
+      setValidationError("No se pudo validar la matrícula. Intenta de nuevo.");
+    } finally {
+      setIsValidating(false);
+    }
   }
 
   const defaultImage = "https://placehold.co/200x300?text=No+Image";
@@ -48,13 +67,12 @@ export function ProyectoProPage() {
   useEffect(() => {
           const fetchProyecto = async () => {
               const id = window.location.pathname.split("/").pop();
-              const response = await fetch(apiUrl(`/api/proyectos/${id}`));
-              const data = await response.json();
+              const data = await apiService.get<ProyectoProPageType>(`/api/proyectos/${id}`);
               console.log("Proyecto data:", data.creditos);
               setProyecto(data);
           };
   
-          fetchProyecto();
+          fetchProyecto().catch(console.error);
       }, []);
 
   return (
@@ -70,7 +88,7 @@ export function ProyectoProPage() {
       </div>
 
       <div className="w-full">
-        <button className="mx-auto block group" onClick={proyectoClick}>
+        <button className="mx-auto block group" onClick={openValidation}>
           <img
             src={proyecto?.thumbnail_url || defaultImage}
             alt={proyecto?.proyecto_nombre}
@@ -169,6 +187,76 @@ export function ProyectoProPage() {
             <a className="hover:text-blue-500" href={`/artistas/${cred.persona_id}`}>{cred.persona_nombre}, </a>
           )}
         </div>
+        <Modal
+          isOpen={isValidationOpen}
+          onClose={() => setIsValidationOpen(false)}
+        >
+          <form onSubmit={validateMatricula} className="space-y-4">
+            <h2 className="text-xl font-bold text-blue-950">Acceso al programa</h2>
+            <p className="text-sm text-gray-600">
+              Por seguridad, solo las personas que participaron en este proyecto pueden consultar el programa completo.
+            </p>
+            {!isMatriculaValid ? (
+              <>
+                <label htmlFor="matricula" className="block text-sm font-medium text-gray-700">
+                  Matrícula o nómina
+                </label>
+                <input
+                  id="matricula"
+                  name="matricula"
+                  autoComplete="username"
+                  required
+                  value={matricula}
+                  onChange={(event) => setMatricula(event.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {validationError && (
+                  <p role="alert" className="text-sm text-red-600">{validationError}</p>
+                )}
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsValidationOpen(false)}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isValidating}
+                    className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isValidating ? "Validando..." : "Validar"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p role="status" className="text-sm text-green-700">
+                  Matrícula validada. Ya puedes abrir el programa.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsValidationOpen(false)}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+                  >
+                    Cerrar
+                  </button>
+                  <a
+                    href={proyecto?.programa_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsValidationOpen(false)}
+                    className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+                  >
+                    Abrir programa
+                  </a>
+                </div>
+              </>
+            )}
+          </form>
+        </Modal>
       </div>
     </div>
   );

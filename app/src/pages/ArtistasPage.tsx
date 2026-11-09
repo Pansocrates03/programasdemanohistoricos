@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import PageTitle from "@/components/PageTitle";
 import type { Artist } from "@/lib/types";
 import Footer from "@/components/Footer";
-import { apiUrl } from "@/lib/apiClient";
+import { apiService } from "@/lib/apiService";
 
 export function ArtistasPage() {
   const [artistas, setArtistas] = useState<Artist[]>([]);
@@ -20,13 +20,15 @@ export function ArtistasPage() {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      const response = await fetch(apiUrl(`/api/artists?search=${search}&page=${page}`));
-      const data: Artist[] = await response.json();
+      const params = new URLSearchParams({ search, page: String(page) });
+      const data = await apiService.get<Artist[]>(`/api/artists?${params}`);
 
       // Si devuelve menos items que el límite, no hay más páginas
       setHasMore(data.length === PAGE_SIZE);
 
       setArtistas(prev => replace ? data : [...prev, ...data]);
+    } catch (error) {
+      console.error("Error al cargar artistas:", error);
     } finally {
       setIsLoading(false);
     }

@@ -5,7 +5,17 @@ import Header from "../Header";
 
 // Asumo que tienes esta función exportada en utils, como indicaste
 import { compressImage } from "@/lib/utils";
-import { apiUrl } from '@/lib/apiClient';
+import { apiService } from '@/lib/apiService';
+
+interface CompanyFormResponse {
+    id?: string;
+    nombre?: string;
+    tag?: string;
+    disciplina?: string;
+    presentadopor?: string;
+    descripcion?: string;
+    description?: string;
+}
 
 const CompanyForm = () => {
     // 1. HOOKS DE ENRUTAMIENTO
@@ -31,11 +41,7 @@ const CompanyForm = () => {
     useEffect(() => {
         if (isEditMode && id) {
             // Llama a tu endpoint de detalles de la compañía
-            fetch(apiUrl(`/api/companies/${id}`))
-                .then(res => {
-                    if (!res.ok) throw new Error("Compañía no encontrada");
-                    return res.json();
-                })
+            apiService.get<CompanyFormResponse>(`/api/companies/${id}`)
                 .then(data => {
                     setFormData({
                         id: data.id || '',
@@ -84,13 +90,11 @@ const CompanyForm = () => {
             const url = isEditMode ? `/api/companies/${id}` : `/api/companies`;
             const method = isEditMode ? 'PUT' : 'POST';
 
-            const res = await fetch(apiUrl(url), {
-                method: method,
-                // IMPORTANTE: Al usar FormData, fetch genera automáticamente el Content-Type "multipart/form-data"
-                body: formDataToSend 
-            });
-
-            if (!res.ok) throw new Error("Error al guardar la compañía");
+            if (method === 'PUT') {
+                await apiService.putForm(url, formDataToSend);
+            } else {
+                await apiService.postForm(url, formDataToSend);
+            }
             
             alert(`Compañía ${isEditMode ? 'actualizada' : 'creada'} con éxito.`);
             navigate(-1); // Regresa a la vista anterior

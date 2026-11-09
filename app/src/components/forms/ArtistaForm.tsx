@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Users, Plus, X, Trash2 } from 'lucide-react';
 import Header from '../Header';
-import { apiUrl } from '@/lib/apiClient';
+import { apiService } from '@/lib/apiService';
 
 interface Rol {
     id: string;
@@ -43,19 +43,12 @@ const ArtistaForm: React.FC = () => {
         const loadCatalogs = async () => {
             try {
                 const [rolesRes, proyectosRes] = await Promise.all([
-                    fetch(apiUrl('/api/roles')),
-                    fetch(apiUrl('/api/all-proyectos')) // Usamos la nueva ruta para obtener solo id y nombre de proyectos
+                    apiService.get<Rol[]>('/api/roles'),
+                    apiService.get<Proyecto[]>('/api/proyectos?page=-1')
                 ]);
 
-                if (!rolesRes.ok || !proyectosRes.ok) {
-                    throw new Error('No se pudo cargar la información de catálogos');
-                }
-
-                const rolesData = await rolesRes.json();
-                const proyectosData = await proyectosRes.json();
-
-                setRoles(rolesData);
-                setProyectos(proyectosData);
+                setRoles(rolesRes);
+                setProyectos(proyectosRes);
             } catch (error) {
                 console.error(error);
             }
@@ -69,20 +62,26 @@ const ArtistaForm: React.FC = () => {
             return;
         }
 
-        fetch(apiUrl(`/api/artists/${id}`))
-            .then((res) => {
-                if (!res.ok) throw new Error('Artista no encontrado');
-                return res.json();
-            })
+        apiService.get<{
+            id: string;
+            nombre: string;
+            matricula: string | null;
+            creditos: {
+                id: string;
+                rol_id: string;
+                proyecto_id?: string;
+                proyecto?: { id: string };
+            }[];
+        }>(`/api/artists/${id}`)
             .then((data) => {
                 setFormData({
                     id: data.id,
                     nombre: data.nombre,
                     matricula: data.matricula || '',
-                    creditos: (data.creditos || []).map((c: any) => ({
-                        id: c.id || `temp_${Math.random()}`,
-                        proyecto_id: c.proyecto_id,
-                        rol_id: c.rol_id,
+                    creditos: (data.creditos || []).map((credito) => ({
+                        id: credito.id || `temp_${crypto.randomUUID()}`,
+                        proyecto_id: credito.proyecto_id || credito.proyecto?.id || '',
+                        rol_id: credito.rol_id,
                     })),
                 });
             })
@@ -107,15 +106,10 @@ const ArtistaForm: React.FC = () => {
                 creditos: formData.creditos.map(({ proyecto_id, rol_id }) => ({ proyecto_id, rol_id }))
             };
 
-            const res = await fetch(apiUrl(url), {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            if (!res.ok) {
-                const errText = await res.text();
-                throw new Error(errText || 'Error al guardar el artista');
+            if (method === 'PUT') {
+                await apiService.put(url, payload);
+            } else {
+                await apiService.post(url, payload);
             }
 
             alert(`Artista ${isEditMode ? 'actualizado' : 'creado'} con éxito.`);

@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import type { ProjectWithCompany } from '@/lib/types';
 import PageTitle from '@/components/PageTitle';
 import Footer from '@/components/Footer';
-import { apiUrl } from '@/lib/apiClient';
+import { apiService } from '@/lib/apiService';
 
 const PAGE_SIZE = 20; // debe coincidir con el limit del backend
 
@@ -18,9 +18,9 @@ const ProyectosPage = () => {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!window.location.href.includes('proyectos')) window.location.href = "/proyectos";
-  }, []); // Añadido [] para que solo corra una vez
+  //useEffect(() => {
+  //  if (!window.location.href.includes('proyectos')) window.location.href = "/proyectos";
+  //}, []); // Añadido [] para que solo corra una vez
 
   const isLoadingRef = useRef(false); // ← guardia síncrona
 
@@ -29,11 +29,13 @@ const ProyectosPage = () => {
     isLoadingRef.current = true;
     setIsLoading(true);
     try {
-      const response = await fetch(apiUrl(`/api/proyectos?search=${encodeURIComponent(search)}&page=${page}`));
-      const data: ProjectWithCompany[] = await response.json();
+      const params = new URLSearchParams({ search, page: String(page) });
+      const data = await apiService.get<ProjectWithCompany[]>(`/api/proyectos?${params}`);
 
       setHasMore(data.length === PAGE_SIZE);
       setProjects(prev => replace ? data : [...prev, ...data]);
+    } catch (error) {
+      console.error("Error al cargar proyectos:", error);
     } finally {
       isLoadingRef.current = false;
       setIsLoading(false);

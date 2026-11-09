@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Header from '@/components/Header';
 import { CircleUserRound, Building2, Clapperboard, Save } from "lucide-react";
 import ProjectManager from '../components/ProjectManager';
-import { apiUrl } from '@/lib/apiClient';
+import { apiService } from '@/lib/apiService';
 
 type TabType = 'compania' | 'artista' | 'proyecto';
 
@@ -14,12 +14,7 @@ const AdminPage: React.FC = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    fetch(apiUrl('/api/companies'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(res => res.json())
+    apiService.post<{ nombre: string; id: string }>('/api/companies', data)
     .then(responseData => {
       console.log("Respuesta del backend al crear compañía:", responseData);
       alert(`Compañía "${responseData.nombre}" creada con ID: ${responseData.id}`);
@@ -34,12 +29,7 @@ const AdminPage: React.FC = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    fetch(apiUrl('/api/artists'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(res => res.json())
+    apiService.post<{ nombre: string; id: string }>('/api/artists', data)
     .then(responseData => {
       console.log("Respuesta del backend al crear artista:", responseData);
       alert(`Artista "${responseData.nombre}" creado con ID: ${responseData.id}`);
